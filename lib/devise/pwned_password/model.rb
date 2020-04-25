@@ -14,16 +14,28 @@ module Devise
       extend ActiveSupport::Concern
 
       included do
-        validate :not_pwned_password,
-          if: respond_to?(:will_save_change_to_encrypted_password?) ? :will_save_change_to_encrypted_password? : :encrypted_password_changed?
+        before_validation :reset_pwned
+        validate :not_pwned_password, if: :check_pwned_password?
       end
 
       module ClassMethods
         Devise::Models.config(self, :min_password_matches)
         Devise::Models.config(self, :min_password_matches_warn)
+        Devise::Models.config(self, :pwned_password_check_enabled)
         Devise::Models.config(self, :pwned_password_check_on_sign_in)
         Devise::Models.config(self, :pwned_password_open_timeout)
         Devise::Models.config(self, :pwned_password_read_timeout)
+      end
+
+      def check_pwned_password?
+        return false unless self.class.pwned_password_check_enabled
+        return false if password.blank?
+
+        if respond_to?(:will_save_change_to_encrypted_password?)
+          will_save_change_to_encrypted_password?
+        else
+          encrypted_password_changed?
+        end
       end
 
       def pwned?
@@ -36,8 +48,7 @@ module Devise
 
       # Returns true if password is present in the PwnedPasswords dataset
       def password_pwned?(password)
-        @pwned = false
-        @pwned_count = 0
+        reset_pwned
 
         options = {
           headers: { "User-Agent" => "devise_pwned_password" },
@@ -60,12 +71,18 @@ module Devise
           )
           return @pwned
         rescue Pwned::Error
-          # This deliberately silently swallows errors and returns false (valid) if there was an error. Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
+          # This deliberately silently swallows errors and returns false (valid) if there was an error.
+          # Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
           return false
         end
       end
 
       private
+
+        def reset_pwned
+          @pwned = false
+          @pwned_count = 0
+        end
 
         def not_pwned_password
           if password_pwned?(password)
