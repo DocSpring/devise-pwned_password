@@ -3,6 +3,12 @@
 require "test_helper"
 
 class Devise::PwnedPassword::Test < ActiveSupport::TestCase
+  def setup
+    User.min_password_matches = 1
+    User.min_password_matches_warn = nil
+    Devise.pwned_password_check_enabled = true
+  end
+
   class WhenPwned < Devise::PwnedPassword::Test
     test "should deny validation and set pwned_count" do
       user = User.create(email: "example@example.org", password: "password", password_confirmation: "password")
@@ -19,13 +25,20 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       assert user.valid?
       assert user.pwned_count > 0
     end
+
+    test "when pwned_password_check_enabled = false, is considered valid" do
+      user = pwned_password_user
+      Devise.pwned_password_check_enabled = false
+      assert user.valid?
+      assert_equal 0, user.pwned_count
+    end
   end
 
   class WhenNotPwned < Devise::PwnedPassword::Test
     test "should accept validation and set pwned_count" do
       user = valid_password_user
       assert user.valid?
-      assert_equal user.pwned_count, 0
+      assert_equal 0, user.pwned_count
     end
 
     test "when password changed to a pwned password: should add error if pwned_count > min_password_matches_warn || pwned_count > min_password_matches" do
