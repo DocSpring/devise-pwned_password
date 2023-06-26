@@ -62,8 +62,11 @@ module Devise
             end
           )
           return @pwned
-        rescue Pwned::Error
-          # This deliberately silently swallows errors and returns false (valid) if there was an error. Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
+
+        rescue Pwned::Error => ex
+          # This deliberately silently swallows errors and returns false (valid) if there was an error unless we are testing.
+          # Most apps won't want to tie the ability to sign up users to the availability of a third-party API.
+          raise ex if Rails.env.test?
           return false
         end
 
