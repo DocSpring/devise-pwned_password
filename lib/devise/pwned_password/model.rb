@@ -58,7 +58,8 @@ module Devise
             end
           )
           return @pwned
-        rescue Pwned::Error
+        rescue Pwned::Error => ex
+          raise ex if Rails.env.test?
           return false
         end
 
