@@ -27,8 +27,7 @@ module Devise
       end
 
       def check_pwned_password?
-        Devise.pwned_password_check_enabled &&
-          (Devise.activerecord51? ? :will_save_change_to_encrypted_password? : :encrypted_password_changed?)
+        Devise.pwned_password_check_enabled && :encrypted_password_changed?
       end
 
       def pwned?
