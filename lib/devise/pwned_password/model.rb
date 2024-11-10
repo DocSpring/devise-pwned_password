@@ -27,8 +27,13 @@ module Devise
       end
 
       def check_pwned_password?
-        Devise.pwned_password_check_enabled &&
-          (respond_to?(:will_save_change_to_encrypted_password?) ? :will_save_change_to_encrypted_password? : :encrypted_password_changed?)
+        return false unless Devise.pwned_password_check_enabled
+
+        if respond_to?(:will_save_change_to_encrypted_password?)
+          will_save_change_to_encrypted_password?
+        else
+          encrypted_password_changed?
+        end
       end
 
       def pwned?
@@ -41,6 +46,10 @@ module Devise
 
       # Returns true if password is present in the PwnedPasswords dataset
       def password_pwned?(password)
+        # We previously had a bug where we were trying to validate nil or empty strings.
+        # Just return false if the password is blank.
+        return false if password.blank?
+
         reset_pwned
         options = {
           headers: { "User-Agent" => "devise_pwned_password" },
