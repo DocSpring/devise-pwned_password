@@ -21,14 +21,13 @@ module Devise
       module ClassMethods
         Devise::Models.config(self, :min_password_matches)
         Devise::Models.config(self, :min_password_matches_warn)
-        Devise::Models.config(self, :pwned_password_check_enabled)
         Devise::Models.config(self, :pwned_password_check_on_sign_in)
         Devise::Models.config(self, :pwned_password_open_timeout)
         Devise::Models.config(self, :pwned_password_read_timeout)
       end
 
       def check_pwned_password?
-        return false unless self.class.pwned_password_check_enabled
+        return false unless Devise.pwned_password_check_enabled
         return false if password.blank?
 
         if respond_to?(:will_save_change_to_encrypted_password?)

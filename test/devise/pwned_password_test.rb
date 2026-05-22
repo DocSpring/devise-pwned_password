@@ -17,27 +17,26 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       user = User.create(email: "example@example.org", password: "password", password_confirmation: "password")
       user.save(validate: true)
       assert_not user.valid?
-      assert_match /\Ahas appeared in a data breach \d{7,} times\z/, user.errors[:password].first
+      assert_match(/\Ahas appeared in a data breach \d{7,} times\z/, user.errors[:password].first)
       assert user.pwned_count > 0
     end
 
     test "when pwned_count < min_password_matches, is considered valid" do
       User.min_password_matches = 999_999_999
-      user = User.create(email: "example@example.org", password: "password", password_confirmation: "password")
-      user.save(validate: true)
+      user = User.new(email: "example@example.org", password: "password", password_confirmation: "password")
       assert user.valid?
       assert user.pwned_count > 0
     end
 
     test "when pwned_password_check_enabled = false, is considered valid" do
-      user = pwned_password_user
+      user = User.new(email: "example@example.org", password: "password", password_confirmation: "password")
       Devise.pwned_password_check_enabled = false
       assert user.valid?
       assert_equal 0, user.pwned_count
     end
 
     test "when using with_pwned_password_check, is considered valid" do
-      user = pwned_password_user
+      user = User.new(email: "example@example.org", password: "password", password_confirmation: "password")
       Devise.pwned_password_check_enabled = false
       assert user.valid?
       with_pwned_password_check do
