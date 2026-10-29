@@ -22,8 +22,8 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
 
     test "when pwned_count < min_password_matches, is considered valid" do
       User.min_password_matches = 999_999_999
-      user = User.create(email: "example@example.org", password: "password", password_confirmation: "password")
-      user.save(validate: true)
+      # Validation resets pwned_count and only checks a password that is about to be saved, so check an unsaved user.
+      user = User.new(email: "example@example.org", password: "password", password_confirmation: "password")
       assert user.valid?
       assert user.pwned_count > 0
     end
@@ -40,6 +40,8 @@ class Devise::PwnedPassword::Test < ActiveSupport::TestCase
       Devise.pwned_password_check_enabled = false
       assert user.valid?
       with_pwned_password_check do
+        # Only a password that is about to be saved is checked.
+        user.password = pwned_password
         assert_not user.valid?
         assert user.pwned_count > 0
         without_pwned_password_check do
